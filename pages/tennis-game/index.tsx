@@ -1,4 +1,3 @@
-import { CANVAS_HEIGHT, CANVAS_WIDTH } from '../../utils/tennis-game';
 import { tennisGame } from '../../hooks/tennis-game';
 import styles from '../../styles/Tennis.module.css';
 export default function Home() {
@@ -9,8 +8,8 @@ export default function Home() {
       <canvas
         id="tennis-game"
         ref={canvasRef}
-        height={CANVAS_HEIGHT}
-        width={CANVAS_WIDTH}
+        height={600}
+        width={800}
         className={styles.canvas}
       ></canvas>
     </div>
