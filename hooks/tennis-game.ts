@@ -17,27 +17,20 @@ export function tennisGame() {
   let PADDLE2_Y = 250;
   let LEFT_SCORE = 0;
   let RIGHT_SCORE = 0;
-  let WINNING_SCORE = 10;
+  let WINNING_SCORE = 1;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   let intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  function checkScore() {
-    if (LEFT_SCORE === WINNING_SCORE || RIGHT_SCORE === WINNING_SCORE) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    }
-  }
   function moveComputerPaddle() {
     const randomNumber = Math.floor(Math.random() * 10);
     if (randomNumber > 1) {
       if (BALL_Y < PADDLE2_Y && PADDLE2_Y > 0) {
-        PADDLE2_Y -= 5;
+        PADDLE2_Y -= 10;
       } else if (
         BALL_Y > PADDLE2_Y + PADDLE_HEIGHT &&
         PADDLE2_Y < CANVAS_HEIGHT - PADDLE_HEIGHT
       ) {
-        PADDLE2_Y += 5;
+        PADDLE2_Y += 10;
       }
     }
   }
@@ -55,12 +48,13 @@ export function tennisGame() {
       if (BALL_Y > PADDLE2_Y && BALL_Y < PADDLE2_Y + PADDLE_HEIGHT) {
         BALL_X_SPEED *= -1;
       } else {
+        console.log(BALL_X, BALL_Y);
         resetBall();
         LEFT_SCORE += 1;
       }
     }
     // left
-    if (BALL_X <= 0) {
+    if (BALL_X - PADDLE_WIDTH <= 0) {
       if (BALL_Y > PADDLE1_Y && BALL_Y < PADDLE1_Y + PADDLE_HEIGHT) {
         BALL_X_SPEED *= -1;
         if (BALL_X < PADDLE1_Y / 2) {
@@ -116,7 +110,6 @@ export function tennisGame() {
   }
 
   function moveEverything() {
-    checkScore();
     moveComputerPaddle();
     checkCornersAndUpdateSpeed();
     updateBallCordinates();
@@ -157,6 +150,48 @@ export function tennisGame() {
       canvasContext.fillText(`Score: ${LEFT_SCORE} - ${RIGHT_SCORE}`, 400, 50);
     }
   }
+  function checkResult() {
+    const canvasContext = (canvasRef.current as HTMLCanvasElement).getContext(
+      '2d'
+    );
+    if (canvasContext) {
+      if (LEFT_SCORE === WINNING_SCORE || RIGHT_SCORE === WINNING_SCORE) {
+        canvasContext.font = '15px Arial';
+        canvasContext.textAlign = 'center';
+        canvasContext.fillText(
+          `Game OVER: ${LEFT_SCORE} - ${RIGHT_SCORE} \n Press Space to play again`,
+          400,
+          300
+        );
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      }
+    }
+  }
+
+  function resetGame() {
+    BALL_X = 50;
+    BALL_Y = 50;
+    BALL_X_SPEED = 4;
+    BALL_Y_SPEED = 4;
+    BALL_RADIUS = 10;
+    PADDLE1_X = 0;
+    PADDLE1_Y = 250;
+    PADDLE_WIDTH = 10;
+    PADDLE_HEIGHT = 100;
+    PADDLE2_X = CANVAS_WIDTH - PADDLE_WIDTH;
+    PADDLE2_Y = 250;
+    LEFT_SCORE = 0;
+    RIGHT_SCORE = 0;
+    WINNING_SCORE = 1;
+
+    intervalRef.current = setInterval(function () {
+      moveEverything();
+      drawEverything();
+      checkResult();
+    }, 1000 / FPS);
+  }
 
   useEffect(() => {
     if (canvasRef.current === null) {
@@ -169,9 +204,18 @@ export function tennisGame() {
         // PADDLE2_Y = mousePosition.y - PADDLE_HEIGHT;
       }
     });
+
+    window.addEventListener('keydown', function (event) {
+      const code = event.key;
+      if (event.code === 'Space') {
+        resetGame();
+        console.log(event);
+      }
+    });
     intervalRef.current = setInterval(function () {
       moveEverything();
       drawEverything();
+      checkResult();
     }, 1000 / FPS);
     return () => {
       if (intervalRef.current) {
