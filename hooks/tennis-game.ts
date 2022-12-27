@@ -12,7 +12,7 @@ export function tennisGame() {
   let PADDLE1_X = 0;
   let PADDLE1_Y = 250;
   let PADDLE_WIDTH = 10;
-  let PADDLE_HEIGHT = 100;
+  let PADDLE_HEIGHT = 101;
   let PADDLE2_X = CANVAS_WIDTH - PADDLE_WIDTH;
   let PADDLE2_Y = 250;
   let LEFT_SCORE = 0;
@@ -23,15 +23,11 @@ export function tennisGame() {
 
   function moveComputerPaddle() {
     const randomNumber = Math.floor(Math.random() * 10);
-    if (randomNumber > 1) {
-      if (BALL_Y < PADDLE2_Y && PADDLE2_Y > 0) {
-        PADDLE2_Y -= 10;
-      } else if (
-        BALL_Y > PADDLE2_Y + PADDLE_HEIGHT &&
-        PADDLE2_Y < CANVAS_HEIGHT - PADDLE_HEIGHT
-      ) {
-        PADDLE2_Y += 10;
-      }
+    if (BALL_Y < PADDLE2_Y) {
+      PADDLE2_Y = BALL_Y - 10;
+    }
+    if (BALL_Y > PADDLE2_Y + PADDLE_HEIGHT) {
+      PADDLE2_Y = BALL_Y + 10;
     }
   }
 
@@ -200,7 +196,12 @@ export function tennisGame() {
     canvasRef.current?.addEventListener('mousemove', function (event) {
       const mousePosition = calculateMousePosition(event);
       if (mousePosition !== undefined) {
-        PADDLE1_Y = mousePosition.y - PADDLE_HEIGHT;
+        if (
+          mousePosition.y >= PADDLE_HEIGHT / 2 &&
+          mousePosition.y <= CANVAS_HEIGHT - PADDLE_HEIGHT / 2
+        ) {
+          PADDLE1_Y = mousePosition.y - PADDLE_HEIGHT / 2;
+        }
         // PADDLE2_Y = mousePosition.y - PADDLE_HEIGHT;
       }
     });
@@ -209,7 +210,6 @@ export function tennisGame() {
       const code = event.key;
       if (event.code === 'Space') {
         resetGame();
-        console.log(event);
       }
     });
     intervalRef.current = setInterval(function () {
