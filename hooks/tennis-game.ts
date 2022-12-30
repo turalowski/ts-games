@@ -1,83 +1,104 @@
-import { useRef, useEffect } from 'react';
-
+import { useState, useRef, useEffect } from 'react';
+import {
+  initialBallState,
+  initialPaddleLeft,
+  initialPaddleRight,
+  initialGameState,
+  PADDLE_HEIGHT,
+  PADDLE_WIDTH,
+  FPS,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  WINNING_SCORE,
+} from '../utils/constants';
 export function tennisGame() {
-  const FPS = 60;
-  const CANVAS_HEIGHT = 600;
-  const CANVAS_WIDTH = 800;
-  let BALL_X = 50;
-  let BALL_Y = 50;
-  let BALL_X_SPEED = 4;
-  let BALL_Y_SPEED = 4;
-  let BALL_RADIUS = 10;
-  let PADDLE1_X = 0;
-  let PADDLE1_Y = 250;
-  let PADDLE_WIDTH = 10;
-  let PADDLE_HEIGHT = 101;
-  let PADDLE2_X = CANVAS_WIDTH - PADDLE_WIDTH;
-  let PADDLE2_Y = 250;
-  let LEFT_SCORE = 0;
-  let RIGHT_SCORE = 0;
-  let WINNING_SCORE = 1;
+  const [game, setGame] = useState(initialGameState);
+  const [ball, setBall] = useState(initialBallState);
+  const [paddleLeft, setPaddleLeft] = useState(initialPaddleLeft);
+  const [paddleRight, setPaddleRight] = useState(initialPaddleRight);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   let intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function moveComputerPaddle() {
-    const randomNumber = Math.floor(Math.random() * 10);
-    if (BALL_Y < PADDLE2_Y) {
-      PADDLE2_Y = BALL_Y - 10;
+    console.log(paddleRight);
+    if (ball.y < paddleRight.y) {
+      setPaddleRight(prevPaddleRight => ({
+        ...prevPaddleRight,
+        y: ball.y - 10,
+      }));
     }
-    if (BALL_Y > PADDLE2_Y + PADDLE_HEIGHT) {
-      PADDLE2_Y = BALL_Y + 10;
+    if (ball.y > paddleRight.y + PADDLE_HEIGHT) {
+      setPaddleRight(prevPaddleRight => ({
+        ...prevPaddleRight,
+        y: ball.y + 10,
+      }));
     }
   }
 
   function resetBall() {
-    BALL_X = 50;
-    BALL_Y = 50;
-    BALL_X_SPEED = 4;
-    BALL_Y_SPEED = 4;
+    setBall(initialBallState);
   }
 
   function checkCornersAndUpdateSpeed() {
     // right
-    if (BALL_X + BALL_RADIUS * 2 > CANVAS_WIDTH) {
-      if (BALL_Y > PADDLE2_Y && BALL_Y < PADDLE2_Y + PADDLE_HEIGHT) {
-        BALL_X_SPEED *= -1;
+    if (ball.x + ball.radius * 2 > CANVAS_WIDTH) {
+      if (ball.y > paddleRight.y && ball.y < paddleRight.y + PADDLE_HEIGHT) {
+        setBall(prevBall => ({
+          ...prevBall,
+          x_speed: prevBall.x_speed * -1,
+        }));
       } else {
-        console.log(BALL_X, BALL_Y);
         resetBall();
-        LEFT_SCORE += 1;
+        setGame(prevGame => ({
+          ...prevGame,
+          left: prevGame.left + 1,
+        }));
+        game.left += 1;
       }
     }
     // left
-    if (BALL_X - PADDLE_WIDTH <= 0) {
-      if (BALL_Y > PADDLE1_Y && BALL_Y < PADDLE1_Y + PADDLE_HEIGHT) {
-        BALL_X_SPEED *= -1;
-        if (BALL_X < PADDLE1_Y / 2) {
-          BALL_Y_SPEED *= -1;
-        } else if (BALL_X > PADDLE1_Y) {
-          BALL_Y_SPEED *= -1;
+    if (ball.x - PADDLE_WIDTH <= 0) {
+      if (ball.y > paddleLeft.y && ball.y < paddleLeft.y + PADDLE_HEIGHT) {
+        setBall(prevBall => ({
+          ...prevBall,
+          x_speed: prevBall.x_speed * -1,
+        }));
+        if (ball.x < paddleLeft.y / 2) {
+          setBall(prevBall => ({
+            ...prevBall,
+            y_speed: prevBall.y_speed * -1,
+          }));
+        } else if (ball.x > paddleLeft.y) {
+          setBall(prevBall => ({
+            ...prevBall,
+            y_speed: prevBall.y_speed * -1,
+          }));
         } else {
           // Do nothing
         }
       } else {
         resetBall();
-        RIGHT_SCORE += 1;
+        game.right += 1;
       }
     }
     // top
-    if (BALL_Y < 0) {
-      BALL_Y_SPEED *= -1;
+    if (ball.y < 0) {
+      ball.y_speed *= -1;
     }
     // bottom
-    if (BALL_Y > CANVAS_HEIGHT) {
-      BALL_Y_SPEED *= -1;
+    if (ball.y > CANVAS_HEIGHT) {
+      ball.y_speed *= -1;
     }
   }
 
   function updateBallCordinates() {
-    BALL_Y += BALL_Y_SPEED;
-    BALL_X += BALL_X_SPEED;
+    setBall(prevBall => {
+      return {
+        ...prevBall,
+        x: prevBall.x + prevBall.x_speed,
+        y: prevBall.y + prevBall.y_speed,
+      };
+    });
   }
 
   function drawRectangle(
@@ -105,11 +126,7 @@ export function tennisGame() {
     return { x: mouseX, y: mouseY };
   }
 
-  function moveEverything() {
-    moveComputerPaddle();
-    checkCornersAndUpdateSpeed();
-    updateBallCordinates();
-  }
+  function moveEverything() {}
 
   function drawEverything() {
     const canvasContext = (canvasRef.current as HTMLCanvasElement).getContext(
@@ -121,8 +138,8 @@ export function tennisGame() {
       // Draw the left paddle
       drawRectangle(
         canvasContext,
-        PADDLE1_X,
-        PADDLE1_Y,
+        paddleLeft.x,
+        paddleLeft.y,
         PADDLE_WIDTH,
         PADDLE_HEIGHT,
         'white'
@@ -130,8 +147,8 @@ export function tennisGame() {
       // Draw the right paddle
       drawRectangle(
         canvasContext,
-        PADDLE2_X,
-        PADDLE2_Y,
+        paddleRight.x,
+        paddleRight.y,
         PADDLE_WIDTH,
         PADDLE_HEIGHT,
         'white'
@@ -139,11 +156,11 @@ export function tennisGame() {
       // Draw the ball
       canvasContext.fillStyle = 'white';
       canvasContext.beginPath();
-      canvasContext.arc(BALL_X, BALL_Y, BALL_RADIUS, 0, Math.PI * 2, true);
+      canvasContext.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2, true);
       canvasContext.fill();
       canvasContext.font = '15px Arial';
       canvasContext.textAlign = 'center';
-      canvasContext.fillText(`Score: ${LEFT_SCORE} - ${RIGHT_SCORE}`, 400, 50);
+      canvasContext.fillText(`Score: ${game.left} - ${game.right}`, 400, 50);
     }
   }
   function checkResult() {
@@ -151,11 +168,11 @@ export function tennisGame() {
       '2d'
     );
     if (canvasContext) {
-      if (LEFT_SCORE === WINNING_SCORE || RIGHT_SCORE === WINNING_SCORE) {
+      if (game.left === WINNING_SCORE || game.right === WINNING_SCORE) {
         canvasContext.font = '15px Arial';
         canvasContext.textAlign = 'center';
         canvasContext.fillText(
-          `Game OVER: ${LEFT_SCORE} - ${RIGHT_SCORE} \n Press Space to play again`,
+          `Game OVER: ${game.left} - ${game.right} \n Press Space to play again`,
           400,
           300
         );
@@ -167,20 +184,10 @@ export function tennisGame() {
   }
 
   function resetGame() {
-    BALL_X = 50;
-    BALL_Y = 50;
-    BALL_X_SPEED = 4;
-    BALL_Y_SPEED = 4;
-    BALL_RADIUS = 10;
-    PADDLE1_X = 0;
-    PADDLE1_Y = 250;
-    PADDLE_WIDTH = 10;
-    PADDLE_HEIGHT = 100;
-    PADDLE2_X = CANVAS_WIDTH - PADDLE_WIDTH;
-    PADDLE2_Y = 250;
-    LEFT_SCORE = 0;
-    RIGHT_SCORE = 0;
-    WINNING_SCORE = 1;
+    setGame(initialGameState);
+    setBall(initialBallState);
+    setPaddleLeft(initialPaddleLeft);
+    setPaddleRight(initialPaddleRight);
 
     intervalRef.current = setInterval(function () {
       moveEverything();
@@ -200,29 +207,33 @@ export function tennisGame() {
           mousePosition.y >= PADDLE_HEIGHT / 2 &&
           mousePosition.y <= CANVAS_HEIGHT - PADDLE_HEIGHT / 2
         ) {
-          PADDLE1_Y = mousePosition.y - PADDLE_HEIGHT / 2;
+          setPaddleLeft(prevPaddleLeft => ({
+            ...prevPaddleLeft,
+            y: mousePosition.y - PADDLE_HEIGHT / 2,
+          }));
         }
         // PADDLE2_Y = mousePosition.y - PADDLE_HEIGHT;
       }
     });
 
     window.addEventListener('keydown', function (event) {
-      const code = event.key;
       if (event.code === 'Space') {
         resetGame();
       }
     });
     intervalRef.current = setInterval(function () {
-      moveEverything();
-      drawEverything();
-      checkResult();
+      updateBallCordinates();
     }, 1000 / FPS);
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
   }, []);
+  useEffect(() => {
+    checkCornersAndUpdateSpeed();
+    moveComputerPaddle();
+  }, [ball]);
+
+  useEffect(() => {
+    drawEverything();
+    checkResult();
+  }, [ball, paddleLeft, paddleRight]);
 
   return [canvasRef];
 }
